@@ -7,7 +7,7 @@
 ### Этап 0 — Монолит-MVP ⬅️
 
 - [x] `GET /health` — пинг-сервер на axum
-- [ ] CRUD функций в памяти (`HashMap` за `Arc<RwLock>`)
+- [x] CRUD функций в памяти (`HashMap` за `Arc<RwLock>`)
 - [ ] `POST /functions/{id}/run` — исполнение через `rhai::Engine`
 - [ ] Авторизация по захардкоженному токену
 
