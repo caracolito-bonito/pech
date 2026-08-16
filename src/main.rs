@@ -8,9 +8,10 @@ use axum::{
     Json, Router,
     extract::{Path, State},
     http::StatusCode,
-    response::IntoResponse,
+    response::{IntoResponse, Response},
     routing::{get, post},
 };
+use rhai::{Dynamic, Engine};
 use serde::{Deserialize, Serialize};
 use tokio::net::TcpListener;
 use uuid::Uuid;
@@ -38,6 +39,7 @@ async fn main() -> Result<()> {
         .route("/", get(root))
         .route("/pies", post(create_pie))
         .route("/pies/{id}", get(get_pie).delete(delete_pie))
+        .route("/pies/{id}/run", post(run_pie))
         .with_state(storage);
 
     let listener = TcpListener::bind("0.0.0.0:6969").await?;
@@ -80,6 +82,25 @@ async fn get_pie(
         .ok_or(StatusCode::NOT_FOUND)?;
 
     Ok(Json(pie))
+}
+
+async fn run_pie(
+    State(storage): State<Storage>,
+    Path(id): Path<Uuid>,
+) -> Result<impl IntoResponse, Response> {
+    let pie = storage
+        .read()
+        .unwrap()
+        .get(&id)
+        .cloned()
+        .ok_or(StatusCode::NOT_FOUND.into_response())?;
+
+    let engine = Engine::new();
+    let result = engine.eval::<Dynamic>(&pie.code);
+    match result {
+        Ok(a) => Ok(a.to_string()),
+        Err(e) => Err((StatusCode::OK, e.to_string()).into_response()),
+    }
 }
 
 async fn delete_pie(State(storage): State<Storage>, Path(id): Path<Uuid>) -> impl IntoResponse {
